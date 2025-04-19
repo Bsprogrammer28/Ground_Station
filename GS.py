@@ -5,6 +5,8 @@ import time
 class GroundStationGUI:
     def __init__(self, master):
         self.master = master
+        self.timer_running = False
+        self.master.bind("t", self.start_timer)
         self.master.title("NAKASHATRA Drone Ground Station")
         self.master.attributes("-fullscreen", True)
         self.master.config(bg="#1e1e1e")
@@ -16,13 +18,15 @@ class GroundStationGUI:
         self.master.bind("<Right>", self.move_x_right)
         self.master.bind("w", self.increase_altitude)
         self.master.bind("s", self.decrease_altitude)
+        self.master.bind("r", self.reset_position)
+        
 
         self.mode = "Manual"
         self.x = 0.0
         self.y = 0.0
         self.z = 0.0
 
-        self.start_time = time.time()
+        # self.start_time = time.time()
 
         # Title
         self.title_label = tk.Label(master, text="NAKASHATRA DRONE GROUND STATION", fg="white", bg="#1e1e1e", font=("Arial", 32, "bold"))
@@ -93,6 +97,25 @@ class GroundStationGUI:
         self.status_text.set(message)
         self.master.after(3000, lambda: self.status_text.set(""))
 
+    def reset_position(self, event):
+        self.x = 0.0
+        self.y = 0.0
+        self.z = 0.0
+        # self.show_status("Position reset to (0.0, 0.0, 0.0)")
+
+    def start_timer(self, event=None):
+        if not self.timer_running:  # Start the timer only if it's not already running
+            self.timer_running = True
+            self.start_time = time.time()  # Reset the start time
+            threading.Thread(target=self.update_timer, daemon=True).start()
+    def update_timer(self):
+        while self.timer_running:  # Update the timer only if it's running
+            elapsed = int(time.time() - self.start_time)
+            mins = elapsed // 60
+            secs = elapsed % 60
+            self.timer_text.set(f"Time Elapsed: {mins:02d}:{secs:02d}")
+            time.sleep(1)
+
     def update_data_loop(self):
         while True:
             text = f"""
@@ -102,17 +125,17 @@ Mode: {self.mode}
 X Position: {self.x:.2f} m
 Y Position: {self.y:.2f} m
 Z (Altitude): {self.z:.2f} m
-"""
+                """
             self.data_text.set(text)
             time.sleep(0.5)
 
-    def update_timer(self):
-        while True:
-            elapsed = int(time.time() - self.start_time)
-            mins = elapsed // 60
-            secs = elapsed % 60
-            self.timer_text.set(f"Time Elapsed: {mins:02d}:{secs:02d}")
-            time.sleep(1)
+    # def update_timer(self):
+    #     while True:
+    #         elapsed = int(time.time() - self.start_time)
+    #         mins = elapsed // 60
+    #         secs = elapsed % 60
+    #         self.timer_text.set(f"Time Elapsed: {mins:02d}:{secs:02d}")
+    #         time.sleep(1)
 
     def exit_fullscreen(self, event=None):
         self.master.attributes("-fullscreen", False)
